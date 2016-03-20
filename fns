@@ -7,41 +7,8 @@
 |
 | This PHP CLI software simplifies searching and finding class names
 | and interface's Namespaces.
-| 
-| Place it in your software/framework root folder and run it by opening
-| a shell and writing php fns
-| 
-| You may also install this using composer and run it using
-| php vendor/carlhannes/find-namespace-php
-| 
-| It will start an interactive shell where you can search for classes
-| Type help for a list of commands
-|
-| - - -USAGE - - -
-| php fns
-| fns > find view
-| Array
-| (
-|    [0] => Illuminate\Foundation\Console\ViewPublishCommand
-|    [1] => Illuminate\Foundation\ViewPublisher
-|    [2] => Illuminate\Support\Facades\View
-| )
-| fns > copy 2 
-| Illuminate\Support\Facades\View copied to clipboard
-|
-| If you do not want to list Interfaces the same way as classes,
-| use the toggle command like this:
-| fns > toggle show_interfaces
-| show_interfaces is now 0
-| This configuration change requires reloading the cache, please wait...
-| Please wait, scanning for namespaces... (this might take some time)
-| ..................
-|
-| To view your configuration, use the command cfg.
-| To view other commands or short handles of commands, use help.
 |
 | Created by https://github.com/carlhannes
-| Revision 1.0
 |
 */
 
