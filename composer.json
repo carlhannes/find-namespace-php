@@ -1,7 +1,7 @@
 {
-    "name": "carlhannes/fqcns",
-    "homepage": "http://github.com/carlhannes/fqcns",
-    "description": "FQCNS (Fully Qualified Class NameSpaces) Help Toolbox",
+    "name": "carlhannes/find-namespace-php",
+    "homepage": "http://github.com/carlhannes/find-namespace-php",
+    "description": "Find namespaces in PHP projects using this php cli tool",
     "keywords": [
         "command",
         "command-line",
