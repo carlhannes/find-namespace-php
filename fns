@@ -128,8 +128,15 @@ function handleCommand($cmd, $vars)
     switch ($cmd) 
     {
         case 'cd':
-            chdir($vars[0]);
-            loadData();
+            if(isset($vars[0]))
+            {
+                chdir($vars[0]);
+                loadData();
+            }
+            else 
+            {
+                handleCommand('pwd', []);
+            }
             break;
         
         case 'clear':
@@ -210,7 +217,15 @@ toggle <variable> (t)');
             break;
             
         case 'ls':
-            system('ls');
+        case 'dir':
+            if (PHP_OS == 'WINNT') 
+            {
+                system('dir');
+            }
+            else 
+            {
+                system('ls');
+            }
             break;
             
         case 'pwd':
