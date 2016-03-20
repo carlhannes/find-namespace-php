@@ -2,7 +2,7 @@
 <?php
 /*
 |--------------------------------------------------------------------------
-| FQCNS (Fully Qualified Class NameSpaces) Help Toolbox
+| find-namespace-php
 |--------------------------------------------------------------------------
 |
 | This PHP CLI software simplifies searching and finding class names
