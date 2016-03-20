@@ -1,0 +1,23 @@
+{
+    "name": "carlhannes/fqcns",
+    "homepage": "http://github.com/carlhannes/fqcns",
+    "description": "FQCNS (Fully Qualified Class NameSpaces) Help Toolbox",
+    "keywords": [
+        "command",
+        "command-line",
+        "fqcns",
+        "class",
+        "namespace"
+    ],
+    "require": {
+        "php": ">=5.3.0"
+    },
+    "require-dev": {
+    },
+    "authors": [
+        {
+            "name": "Carl Hannes",
+            "homepage": "https://github.com/carlhannes"
+        }
+    ]
+}

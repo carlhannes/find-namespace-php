@@ -1,0 +1,374 @@
+#!/usr/bin/env php
+<?php
+/*
+|--------------------------------------------------------------------------
+| FQCNS (Fully Qualified Class NameSpaces) Help Toolbox
+|--------------------------------------------------------------------------
+|
+| This PHP CLI software simplifies searching and finding class names
+| and interface's Namespaces.
+| 
+| Place it in your software/framework root folder and run it by opening
+| a shell and writing php fns
+| 
+| You may also install this using composer and run it using
+| php vendor/carlhannes/find-namespace-php
+| 
+| It will start an interactive shell where you can search for classes
+| Type help for a list of commands
+|
+| - - -USAGE - - -
+| php fns
+| fns > find view
+| Array
+| (
+|    [0] => Illuminate\Foundation\Console\ViewPublishCommand
+|    [1] => Illuminate\Foundation\ViewPublisher
+|    [2] => Illuminate\Support\Facades\View
+| )
+| fns > copy 2 
+| Illuminate\Support\Facades\View copied to clipboard
+|
+| If you do not want to list Interfaces the same way as classes,
+| use the toggle command like this:
+| fns > toggle show_interfaces
+| show_interfaces is now 0
+| This configuration change requires reloading the cache, please wait...
+| Please wait, scanning for namespaces... (this might take some time)
+| ..................
+|
+| To view your configuration, use the command cfg.
+| To view other commands or short handles of commands, use help.
+|
+| Created by https://github.com/carlhannes
+| Revision 1.0
+|
+*/
+
+// Define default config data
+$defaultData = [
+    'fqcns' => [],
+    'cfg'   => [
+        'show_interfaces' => 1
+    ]
+];
+
+// Define global variables
+$lastFind = [];
+$run = true;
+$data = [];
+
+// Run the software
+$status = main();
+exit($status);
+
+/**
+ * Main program loop 
+ * 
+ * @return integer exit status
+ */
+function main() 
+{
+    global $argv, $lastFind, $run;
+    
+    // cd to the argv[1] path if set (why did I even implement this?)
+    if(isset($argv[1]))
+    {
+        handleCommand('cd', [$argv[1]]);
+    }
+    
+    while($run) 
+    {
+        // Begin by loading data and configuration
+        loadData();
+        
+        // print the fqcns prompt to acknowledge that we're in the fqcns terminal
+        echo "\033[1;32m".basename(getWorkingDirectory())." fns >\033[0m ";
+        
+        // readline() wouldn't suffice for our needs, which are different depending on platform
+        if (PHP_OS == 'WINNT') 
+        {
+            $line = stream_get_line(STDIN, 1024, PHP_EOL);
+        } 
+        else 
+        {
+            // readline() is not always included, so here is the manual alternative
+            $f = popen("read; echo \$REPLY", "r");
+            $line = fgets($f, 100);
+            pclose($f);
+        }
+        
+        // Trim the line to avoid errors when exploding
+        $line = trim($line);
+        
+        // Explode vars
+        $vars = explode(' ', $line);
+        
+        // the first var is actually the command, shift it out
+        $cmd = array_shift($vars);
+        
+        // handle a command with vars
+        handleCommand($cmd, $vars);
+    }
+    
+    return 1;
+}
+
+/**
+ * Handle a command
+ * 
+ * @param  string   $cmd    The command to be run
+ * @param  array    $vars   Acceptable variables 
+ */
+function handleCommand($cmd, $vars)
+{
+    global $lastFind, $run, $data;
+    
+    // ABCDEFGHIJKLMNOPQRSTUVWXYZ
+    switch ($cmd) 
+    {
+        case 'cd':
+            chdir($vars[0]);
+            loadData();
+            break;
+        
+        case 'clear':
+        case 'cls':
+            if (PHP_OS == 'WINNT') 
+            {
+                system('cls');
+            }
+            else 
+            {
+                system('clear');
+            }
+            break;
+            
+        case 'copy':
+        case 'c':
+        case 'get':
+        case 'g':
+            $get = $lastFind[(isset($vars[0]) ? $vars[0] : 0)];
+            
+            p($get.' copied to clipboard');
+            
+            if (PHP_OS == 'WINNT') 
+            {
+                shell_exec('echo "'.$get.'" | clip');
+            } 
+            else 
+            {
+                shell_exec('echo "'.$get.'" | pbcopy'); // OS X only... :( xclip on linux?
+            }
+            break;
+            
+        case 'config':
+        case 'cfg':
+            p(trim(print_r($data['cfg'], true)));
+            break;
+            
+        case 'exit':
+        case 'quit':
+        case 'end':
+        case 'q':
+            $run = false;
+            p('Bye-bye!');
+            break;
+            
+        case 'find':
+        case 'f':
+            $fqcns = getFQCNS();
+            $find = implode(' ', $vars);
+            
+            $lastFind = array_values(array_filter($fqcns, function($test) use($find) {
+                return (stripos($test, $find) !== false);
+            }));
+            
+            p(trim(print_r($lastFind, true)));
+            p(count($lastFind).' results, use copy <index> to copy to clipboard');
+            break;
+            
+        case 'help':
+            p('List of commands, ex. Command <var> (shortcut, short2)');
+p('cd
+clear (cls)
+copy <index> (c, get, g)
+config (cfg)
+exit (quit, end, q)
+find <search> (f)
+help
+list (l)
+ls
+pwd
+reload (r)
+toggle <variable> (t)');
+            break;
+            
+        case 'list':
+        case 'l':
+            p(implode(getFQCNS(), "\n"));
+            break;
+            
+        case 'ls':
+            system('ls');
+            break;
+            
+        case 'pwd':
+            p(realpath(getWorkingDirectory()));
+            break;
+            
+        case 'reload':
+        case 'r':
+            getFQCNS(true);
+            p('Done!');
+            break;
+            
+        case 'toggle':
+        case 't':
+            if(isset($vars[0]) && isset($data['cfg'][$vars[0]]))
+            {
+                $data['cfg'][$vars[0]] = ($data['cfg'][$vars[0]] == 1 ? 0 : 1);
+                
+                p($vars[0].' is now '.$data['cfg'][$vars[0]]);
+                
+                if($vars[0] == 'show_interfaces')
+                {
+                    p('This configuration change requires reloading the cache, please wait...');
+                    handleCommand('reload', []);
+                }
+                
+                saveData();
+            }
+            else 
+            {
+                p('Invalid config variable');
+            }
+            break;
+            
+        default:
+            if($cmd != '') 
+            {
+                p("Command not found \"$cmd\", write help for a list of commands");
+            }
+            break;
+    }
+}
+
+/**
+ * Get fully qualified class namespaces
+ * 
+ * @param  boolean $forceReload flushes the cache and forces reload
+ * @return array                Array of all class namespaces
+ */
+function getFQCNS($forceReload = false)
+{
+    global $data;
+    
+    $path = getWorkingDirectory().'/';
+    $fqcns = [];
+    
+    if(!empty($data['fqcns']) && !$forceReload) 
+    {
+        $fqcns = $data['fqcns'];
+    }
+    else
+    {
+        p('Please wait, scanning for namespaces... (this might take some time)');
+        
+        $allFiles = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($path));
+        $phpFiles = new RegexIterator($allFiles, '/\.php$/');
+        $i = 0;
+        foreach ($phpFiles as $phpFile) 
+        {
+            $content = file_get_contents($phpFile->getRealPath());
+            $tokens = token_get_all($content);
+            $namespace = '';
+            
+            for ($index = 0; isset($tokens[$index]); $index++) 
+            {
+                if (!isset($tokens[$index][0])) 
+                {
+                    continue;
+                }
+                if (T_NAMESPACE === $tokens[$index][0]) 
+                {
+                    $index += 2; // Skip namespace keyword and whitespace
+                    while (isset($tokens[$index]) && is_array($tokens[$index])) 
+                    {
+                        $namespace .= $tokens[$index++][1];
+                    }
+                }
+                if (T_CLASS === $tokens[$index][0] || (T_INTERFACE === $tokens[$index][0] && $data['cfg']['show_interfaces'] == 1))
+                {
+                    $index += 2; // Skip class/interface keyword and whitespace
+                    $fqcns[] = $namespace.'\\'.$tokens[$index][1];
+                }
+            }
+            
+            $i++;
+            if($i % 80 == 0) 
+            {
+                echo ".";
+            }
+        }
+        echo "\n";
+        
+        $data['fqcns'] = $fqcns;
+        saveData();
+    }
+    
+    return $fqcns;
+}
+
+/**
+ * Load data from json file
+ * 
+ */
+function loadData()
+{
+    global $data, $defaultData;
+    
+    $file = getWorkingDirectory().'/.fns.data.json';
+    
+    if(file_exists($file))
+    {
+        $data = json_decode(file_get_contents($file), true);
+    }
+    else 
+    {
+        $data = $defaultData;
+    }
+}
+
+/**
+ * Save data from json file
+ * 
+ */
+function saveData()
+{
+    global $data;
+    
+    $file = getWorkingDirectory().'/.fns.data.json';
+    
+    file_put_contents($file, json_encode($data));
+}
+
+/**
+ * Get the current working directory
+ * 
+ * @return string
+ */
+function getWorkingDirectory()
+{
+    return (getcwd() ? getcwd() : __DIR__);
+}
+
+/**
+ * Print text function
+ * 
+ * @param  string $out The text to print
+ */
+function p($out) 
+{
+    print $out . "\n";
+}
